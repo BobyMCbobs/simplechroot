@@ -1,0 +1,21 @@
+{
+	"app-id": "com.bobymcbobs.simplechroot",
+	"runtime": "org.freedesktop.Platform",
+	"runtime-version": "18.08",
+	"sdk": "org.freedesktop.Sdk",
+	"command": "simplechroot",
+	"modules": [{
+		"name": "simple
+		chroot",
+		"buildsystem": "simple",
+		"sources": [{
+			"type": "archive",
+			"url": "https://gitlab.com/BobyMCbobs/simplechroot/-/archive/1.0.0/simplechroot-1.0.0.zip",
+			"sha256": "??????????????????????????????????????????",
+			"dest": "main"
+		}],
+		"build-commands": [
+			"make DESTDIR=/app/ install"
+		]
+	}]
+}

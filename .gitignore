@@ -1,0 +1,5 @@
+tools
+deb-build
+zip-build
+simplechroot.AppDir
+simplechroot-x86_64.AppImage

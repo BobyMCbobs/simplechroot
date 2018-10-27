@@ -1,0 +1,34 @@
+#!/bin/bash
+
+simplechroot() {
+	local cur prev units i unitCount
+	_init_completion -s || return
+	case $prev in
+		-h|--help)
+			COMPREPLY=( $( compgen -W "config sshconfig service settings" -- ${cur} ) )
+			return
+		;;
+
+		-n|--no-loop|-o|--once|-d|--daemonise|--daemonize|-t|--testmode|-r|--remove)
+			# TODO
+			# give more than one file to use via completion.
+			for i in $( command ls /etc/getnewip/units )
+			do
+				units="$units $i"
+			done
+			COMPREPLY=( $( compgen -W "$units" -- ${cur} ) )
+			return
+		;;
+	esac
+
+	if [[ $cword -eq 1 ]]
+	then
+		COMPREPLY=( $( compgen -W "-n --no-loop -o --once -d --daemonise --daemonize
+		-t --testmode -l --list -m --make-unit -r --remove-unit -h --help -v --version --print-blank-config" -- ${cur}) )
+		[[ $COMPREPLY ]] && return
+	fi
+}
+
+complete -F _simplechroot simplechroot
+
+# ex: filetype=sh

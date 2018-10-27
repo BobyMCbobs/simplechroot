@@ -1,0 +1,10 @@
+Source: simplechroot
+Section: utils
+Priority: optional
+Maintainer: Caleb Woodbine <calebwoodbine.public@gmail.com>
+Standards-Version: 1.1.0
+Build-Depends: debhelper (>= 9)
+
+Package: simplechroot
+Architecture: all
+Description: Chroot with ease

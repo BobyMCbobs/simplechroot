@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=simplechroot
+GenericName=chroot
+Comment=Setup a chroot simply
+Exec=AppRun
+Icon=simplechroot
+StartupNotify=true
+Terminal=false
+Categories=Network;Monitor;
+Name[en_US]=simplechroot
+StartupWMClass=simplechroot

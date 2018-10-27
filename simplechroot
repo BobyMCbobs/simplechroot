@@ -1,0 +1,179 @@
+#!/bin/bash
+
+# simplechroot
+
+#
+# Copyright (C) 2018 Caleb Woodbine <calebwoodbine.public@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+mountNode=false
+version=0.0.1
+
+if [ ! "$(id -u)" = 0 ]
+then
+	echo "Error: you must be root to use this script."
+	exit 1
+fi
+
+if [ -z "$args" ]
+then
+	args="/bin/bash"
+fi
+
+if (($# == 0))
+then
+	echo "Error: No args provided. Please run 'simplechroot -h' for help."
+	exit 1
+fi
+
+function parse_rootDir() {
+# resolve dir or node
+rootDir="$_rootDir"
+if [[ "$_rootDir" = "/dev"* ]]
+then
+	mkdir -p /tmp/simplechroot-mount-root
+	if mount | grep -q /tmp/simplechroot-mount-root || ! mount "$_rootDir" /tmp/simplechroot-mount-root
+	then
+		echo "Cannot mount '$_rootDir'."
+		exit 1
+	fi
+	rootDir="/tmp/simplechroot-mount-root"
+	mountNode=true
+
+elif [ ! -d "$_rootDir" ] || [[ ! "$_rootDir" = "/dev"* ]]
+then
+	echo "'$_rootDir' is not a directory or node."
+	exit 1
+fi
+}
+
+function setupChroot() {
+# bind mount points
+
+echo "Setting up '$rootDir'"
+for point in dev proc sys run
+do
+	if ! mount --bind "/$point" "$rootDir/$point"
+	then
+		echo "Failed to mount '/$point' to '$rootDir/$point'; Unmounting all."
+		unmountChroot
+		exit
+	fi
+done
+}
+
+function unmountChroot() {
+# unmount all binds
+echo "Unmounting and cleaning up."
+for point in dev proc sys run
+do
+	if mount | grep -q "$rootDir/$point"
+	then
+		umount "$rootDir/$point" || echo "Failed to unmount '$rootDir/$point'"
+	fi
+done
+
+if [ ! -z "$bootDir" ]
+then
+	umount "$rootDir"/boot
+fi
+
+if [ "$mountNode" = true ]
+then
+	umount "$rootDir"
+fi
+}
+
+function validate_rootDir() {
+# check if $_rootDir contains a standard Linux filesystem
+for i in bin/bash boot dev etc home lib mnt proc root run sbin sys tmp usr var
+do
+	if [ -d "$rootDir/$i" ] || [ -f "$rootDir/$i" ]
+	then
+		continue
+	else
+		echo "Cannot find standard Linux filesystem folders or programs"
+		exit 1
+	fi
+done
+
+unset i
+}
+
+function parse_bootDir() {
+# parse given boot node
+if [[ "$bootDir" = "/dev"* ]]
+then
+	return
+fi
+
+echo "Error: arg '-b' must be a node in '/dev'."
+exit 1
+}
+
+function mount_bootDir() {
+# mount boot node when given
+if ! mount "$bootDir" "$rootDir"/boot
+then
+	echo "Error: failed to mount '$bootDir' to '$rootDir/boot'."
+	exit
+fi
+}
+
+while [ $# -gt 0 ]
+do
+	case "$1" in
+		-d)
+			# root directory or node
+			shift
+			_rootDir="$1"
+			;;
+		-b)
+			# boot directory or node
+			shift
+			bootDir="$1"
+			;;
+		*)
+			# help menu
+			echo "simplechroot ($version)"
+			echo
+			echo "Usage examples:"
+			echo "	-d '/dev/sda2' -b '/dev/sda1'"
+			echo "	-d '/mnt/rootMount'"
+			echo "	-d '/mnt/rootMount' -b '/dev/sda1'"
+			exit
+			;;
+	esac
+	shift
+done
+
+if [ -z "$_rootDir" ]
+then
+	echo "Error: please enter root directory or node using the '-d' arg."
+	exit 1
+fi
+
+# main process
+parse_rootDir
+validate_rootDir
+if [ ! -z "$bootDir" ]
+then
+	parse_bootDir
+	mount_bootDir
+fi
+setupChroot
+chroot "$rootDir" "$args"
+unmountChroot

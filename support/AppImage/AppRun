@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ -z "$APPDIR" ]
+then
+	APPDIR=$(dirResolve "AppRun")
+fi
+
+export PATH="${APPDIR}/usr/bin:${PATH}"
+
+simplechroot $@
