@@ -42,6 +42,12 @@ fi
 function parse_rootDir() {
 # resolve dir or node
 rootDir="$_rootDir"
+if [ ! -e "$rootDir" ]
+then
+	echo "Error: directory or node not found."
+	exit 1
+fi
+
 if [[ "$_rootDir" = "/dev"* ]]
 then
 	mkdir -p /tmp/simplechroot-mount-root
@@ -77,7 +83,6 @@ done
 
 function unmountChroot() {
 # unmount all binds
-echo "Unmounting and cleaning up."
 for point in dev proc sys run
 do
 	if mount | grep -q "$rootDir/$point"
@@ -86,7 +91,7 @@ do
 	fi
 done
 
-if [ ! -z "$bootDir" ]
+if [ ! -z "$bootDir" ] && mount | grep -q "$rootDir"/boot
 then
 	umount "$rootDir"/boot
 fi
@@ -101,7 +106,7 @@ function validate_rootDir() {
 # check if $_rootDir contains a standard Linux filesystem
 for i in bin/bash boot dev etc home lib mnt proc root run sbin sys tmp usr var
 do
-	if [ -d "$rootDir/$i" ] || [ -f "$rootDir/$i" ]
+	if [ -e "$rootDir/$i" ]
 	then
 		continue
 	else
@@ -166,6 +171,8 @@ then
 	exit 1
 fi
 
+trap unmountChroot EXIT
+
 # main process
 parse_rootDir
 validate_rootDir
@@ -176,4 +183,3 @@ then
 fi
 setupChroot
 chroot "$rootDir" "$args"
-unmountChroot

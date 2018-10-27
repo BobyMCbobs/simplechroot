@@ -1,14 +1,18 @@
 PREFIX ?= /usr
+COMPLETIONDIR ?= $(PREFIX)/share/bash-completion/completions
 
 all: help
 
 install:
 	@mkdir -p $(DESTDIR)$(PREFIX)/bin
+	@mkdir -p $(DESTDIR)$(COMPLETIONDIR)
 	@cp -p simplechroot $(DESTDIR)$(PREFIX)/bin
+	@cp -p simplechroot.completion $(DESTDIR)$(COMPLETIONDIR)/simplechroot
 	@chmod 755 $(DESTDIR)$(PREFIX)/bin/simplechroot
+	@chmod 755 $(DESTDIR)$(COMPLETIONDIR)/simplechroot
 
 uninstall:
-	@rm -rf $(DESTDIR)$(PREFIX)/bin/simplechroot
+	@rm -rf $(DESTDIR)$(PREFIX)/bin/simplechroot $(DESTDIR)$(COMPLETIONDIR)/simplechroot
 
 prep-deb:
 	@mkdir -p deb-build/simplechroot
