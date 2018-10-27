@@ -1,5 +1,5 @@
 #!/bin/bash
 
-complete -W "-d -b -h" simplechroot
+complete -W "-d -b -h --reinstall-grub" simplechroot
 
 # ex: filetype=sh

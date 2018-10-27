@@ -131,6 +131,11 @@ exit 1
 
 function mount_bootDir() {
 # mount boot node when given
+if [[ "$bootDir" = "$_rootDir" ]]
+then
+	return
+fi
+
 if ! mount "$bootDir" "$rootDir"/boot
 then
 	echo "Error: failed to mount '$bootDir' to '$rootDir/boot'."
@@ -151,14 +156,38 @@ do
 			shift
 			bootDir="$1"
 			;;
+		--reinstall-grub)
+			shift
+			_grubver="$1"
+			[ "$_grubver" = 2 ] && grubver="2"
+			reinstallgrub=true
+			if [ -z "$bootDir" ] || [ -z "$_rootDir" ]
+			then
+				echo "Error: arg '-b' and '-d' must be used. It is required for reinstalling grub."
+				exit 1
+			fi
+			grubver="$_grubver"
+			bootDir_base=$(lsblk -no pkname --path $bootDir)
+			args="/usr/sbin/grub${grubver}-install $bootDir_base --recheck && grub${grubver}-mkconfig -o /boot/grub${grubver}/grub.cfg"
+			;;
 		*)
 			# help menu
 			echo "simplechroot ($version)"
 			echo
 			echo "Usage examples:"
-			echo "	-d '/dev/sda2' -b '/dev/sda1'"
-			echo "	-d '/mnt/rootMount'"
-			echo "	-d '/mnt/rootMount' -b '/dev/sda1'"
+			echo "	-d /dev/sda2 -b /dev/sda1"
+			echo "	-d /mnt/rootMount"
+			echo "	-d /mnt/mapper/lvmPartition"
+			echo "	-d /mnt/rootMount -b /dev/sda1"
+			echo "	-d /dev/sda2 -b /dev/sda1 --reinstall-grub"
+			echo
+			echo "==========================================================="
+			echo "| -d               | mounted root partition or devfs node |"
+			echo "| -b               | boot partition devfs node            |"
+			echo "| --reinstall-grub | reinstall grub (requires -b)         |"
+			echo "|                  | pass 2, for use in grub2-install     |"
+			echo "==========================================================="
+			echo
 			exit
 			;;
 	esac
@@ -182,4 +211,12 @@ then
 	mount_bootDir
 fi
 setupChroot
-chroot "$rootDir" "$args"
+if [ ! -z "$reinstallgrub" ]
+then
+cat << EOF | chroot "$rootDir"
+bash -c "$args"
+exit
+EOF
+else
+	chroot "$rootDir" "$args"
+fi
