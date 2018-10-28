@@ -24,6 +24,7 @@ Setup a chroot with ease.
 %license LICENSE
 %doc README.md
 /usr/bin/%{name}
+/usr/share/bash-completion/completions/%{name}
 
 
 %changelog

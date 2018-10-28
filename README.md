@@ -28,7 +28,7 @@ simplechroot -d /dev/sda2 -b /dev/sda1 --reinstall-grub 2
 
 # mount the boot node, chroot, and run a single command
 simplechroot -d /dev/sda2 -b /dev/sda1 -c "ls -alh /bin/."
-``` 
+```
 
 | Arg | Description |
 | - | - |
@@ -36,6 +36,13 @@ simplechroot -d /dev/sda2 -b /dev/sda1 -c "ls -alh /bin/."
 | `-b` | Boot partition devfs node (i.e: /dev/sda1, /dev/nvme0n1p1) |
 | `--reinstall-grub` | Reinstall grub on the given drive (requires -d and -b). For use in grub2-install use `--reinstall-grub 2` |
 | `-c` | Pass a command inside the chroot environment |
+
+### Packaging
+AppImage: `make prep-appimage && make build-appimage`  
+deb package: `make deb-pkg`  
+deb source package: `make deb-src`  
+zip package: `make build-zip`  
+spec file: [support/specs/simplechroot.spec](support/specs/simplechroot.spec)
 
 ### Notes
 - This has been tested:
