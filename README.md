@@ -5,6 +5,13 @@ Chroot with ease
 - Setup a chroot and chroot in in a single command
 - The ability to reinstall grub easily
 
+### Obtaining
+Just get the script:
+```bash
+wget https://gitlab.com/BobyMCbobs/simplechroot/raw/master/simplechroot
+chmod +x simplechroot
+```
+
 ### Usage
 ```bash
 # chroot into an already mounted root partition
@@ -15,6 +22,12 @@ simplechroot -d /dev/sda2
 
 # mount the boot node and chroot (on if there is a boot partition)
 simplechroot -d /dev/sda2 -b /dev/sda1  
+
+# mount the boot node, chroot, and reinstall grub
+simplechroot -d /dev/sda2 -b /dev/sda1 --reinstall-grub 2
+
+# mount the boot node, chroot, and run a single command
+simplechroot -d /dev/sda2 -b /dev/sda1 -c "ls -alh /bin/."
 ``` 
 
 | Arg | Description |
@@ -22,6 +35,7 @@ simplechroot -d /dev/sda2 -b /dev/sda1
 | `-d` | Mounted root partition path or devfs node (i.e: /mnt/p, /dev/sda2, /dev/nvme0n1p2) |
 | `-b` | Boot partition devfs node (i.e: /dev/sda1, /dev/nvme0n1p1) |
 | `--reinstall-grub` | Reinstall grub on the given drive (requires -d and -b). For use in grub2-install use `--reinstall-grub 2` |
+| `-c` | Pass a command inside the chroot environment |
 
 ### Notes
 - This has been tested:

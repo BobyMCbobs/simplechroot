@@ -20,6 +20,7 @@
 #
 
 mountNode=false
+_verbose=false
 version=0.0.1
 
 if [ ! "$(id -u)" = 0 ]
@@ -39,29 +40,48 @@ then
 	exit 1
 fi
 
+function msg() {
+# print if _verbose is true
+if [ "$_verbose" = true ]
+then
+	echo $@
+fi
+}
+
 function parse_rootDir() {
 # resolve dir or node
 rootDir="$_rootDir"
 if [ ! -e "$rootDir" ]
 then
 	echo "Error: directory or node not found."
+	trap "" EXIT
 	exit 1
 fi
 
 if [[ "$_rootDir" = "/dev"* ]]
 then
+	_rootDir_basename=$(basename $_rootDir)
+	if ! lsblk | grep -q "$_rootDir_basename" || [[ "$_rootDir_basename" = "loop"* ]] || ( [[ ! "${_rootDir_basename#${_rootDir_basename%?}}" = [[:digit:]] ]] && [[ ! $(dirname $_rootDir) = "/dev/mapper" ]] && [[ ! $(dirname $_rootDir) = "/dev/dm"* ]] )
+	then
+		echo "Error: please enter a valid root partition disk node (must be a partition)."
+		exit 1
+	fi
 	mkdir -p /tmp/simplechroot-mount-root
 	if mount | grep -q /tmp/simplechroot-mount-root || ! mount "$_rootDir" /tmp/simplechroot-mount-root
 	then
 		echo "Cannot mount '$_rootDir'."
 		exit 1
 	fi
+	msg "Status: mounted '$_rootDir' to '/tmp/simplechroot-mount-root'."
 	rootDir="/tmp/simplechroot-mount-root"
 	mountNode=true
 
-elif [ ! -d "$_rootDir" ] || [[ ! "$_rootDir" = "/dev"* ]]
+elif [ -d "$_rootDir" ] || [[ "$_rootDir" = "/dev"* ]]
 then
-	echo "'$_rootDir' is not a directory or node."
+	rootDir=$(readlink -f "$rootDir")
+	return
+else
+	echo "'$_rootDir' is not a valid directory or node."
 	exit 1
 fi
 }
@@ -69,7 +89,7 @@ fi
 function setupChroot() {
 # bind mount points
 
-echo "Setting up '$rootDir'"
+msg "Setting up '$_rootDir'"
 for point in dev proc sys run
 do
 	if ! mount --bind "/$point" "$rootDir/$point"
@@ -83,6 +103,7 @@ done
 
 function unmountChroot() {
 # unmount all binds
+msg "Unmounting partitions"
 for point in dev proc sys run
 do
 	if mount | grep -q "$rootDir/$point"
@@ -93,7 +114,7 @@ done
 
 if [ ! -z "$bootDir" ] && mount | grep -q "$rootDir"/boot
 then
-	umount "$rootDir"/boot
+	umount -f "$rootDir"/boot
 fi
 
 if [ "$mountNode" = true ]
@@ -110,10 +131,21 @@ do
 	then
 		continue
 	else
-		echo "Cannot find standard Linux filesystem folders or programs"
+		echo "Cannot find standard Linux filesystem folders or programs."
 		exit 1
 	fi
 done
+
+if [ "$reinstallgrub" = true ]
+then
+	if [[ ! -e "$rootDir/usr/sbin/grub${grubver}-install" ]]
+	then
+		echo "Cannot find standard Linux filesystem folders or programs."
+		echo "The system which you are trying to repair most likely uses grub2."
+		echo "Try 'simplechroot -d $_rootDir -b $bootDir --reinstall-grub 2'"
+		exit 1
+	fi
+fi
 
 unset i
 }
@@ -122,6 +154,12 @@ function parse_bootDir() {
 # parse given boot node
 if [[ "$bootDir" = "/dev"* ]]
 then
+	_bootDir_basename=$(basename $bootDir)
+	if ! lsblk | grep -q "$_bootDir_basename" || [[ "$_bootDir_basename" = "loop"* ]] || ( [[ ! "${_bootDir_basename#${_bootDir_basename%?}}" = [[:digit:]] ]] && [[ ! $(dirname $bootDir) = "/dev/mapper" ]]  && [[ ! $(dirname $bootDir) = "/dev/dm"* ]] )
+	then
+		echo "Error: please enter a valid boot partition disk node (must be a partition)."
+		exit 1
+	fi
 	return
 fi
 
@@ -143,6 +181,7 @@ then
 fi
 }
 
+# parse args
 while [ $# -gt 0 ]
 do
 	case "$1" in
@@ -151,42 +190,63 @@ do
 			shift
 			_rootDir="$1"
 			;;
+
 		-b)
 			# boot directory or node
 			shift
 			bootDir="$1"
 			;;
+
 		--reinstall-grub)
+			# grub reinstallation
 			shift
 			_grubver="$1"
-			[ "$_grubver" = 2 ] && grubver="2"
+			[ "$_grubver" = 2 ] && grubver="2" || grubver=""
 			reinstallgrub=true
 			if [ -z "$bootDir" ] || [ -z "$_rootDir" ]
 			then
 				echo "Error: arg '-b' and '-d' must be used. It is required for reinstalling grub."
 				exit 1
 			fi
-			grubver="$_grubver"
 			bootDir_base=$(lsblk -no pkname --path $bootDir)
-			args="/usr/sbin/grub${grubver}-install $bootDir_base --recheck && grub${grubver}-mkconfig -o /boot/grub${grubver}/grub.cfg"
+			msg "Reinstalling grub${grubver} on '$bootDir_base'."
+			args=("grub${grubver}-install $bootDir_base --recheck" "grub${grubver}-mkconfig -o /boot/grub${grubver}/grub.cfg")
 			;;
+
+		-c)
+			# commands to run in chroot
+			shift
+			sendcommands=true
+			args="$@"
+			;;
+
+		-v)
+			# output progress
+			_verbose=true
+			;;
+
 		*)
 			# help menu
 			echo "simplechroot ($version)"
 			echo
 			echo "Usage examples:"
-			echo "	-d /dev/sda2 -b /dev/sda1"
-			echo "	-d /mnt/rootMount"
-			echo "	-d /mnt/mapper/lvmPartition"
-			echo "	-d /mnt/rootMount -b /dev/sda1"
-			echo "	-d /dev/sda2 -b /dev/sda1 --reinstall-grub"
+			echo "	simplechroot -d /dev/sda2 -b /dev/sda1"
+			echo "	simplechroot -d /mnt/rootMount"
+			echo "	simplechroot -d /mnt/mapper/lvmPartition"
+			echo "	simplechroot -d /mnt/rootMount -b /dev/sda1"
+			echo "	simplechroot -d /dev/sda2 -b /dev/sda1 --reinstall-grub"
+			echo "	simplechroot -d /mnt/rootMount -b /dev/sda1 -c 'ls /bin/.'"
 			echo
 			echo "==========================================================="
 			echo "| -d               | mounted root partition or devfs node |"
 			echo "| -b               | boot partition devfs node            |"
+			echo "| -v               | make output verbose                  |"
+			echo "| -c               | send a command to the chroot         |"
 			echo "| --reinstall-grub | reinstall grub (requires -b)         |"
 			echo "|                  | pass 2, for use in grub2-install     |"
 			echo "==========================================================="
+			echo
+			echo "To find your disks, use 'fdisk -l' or your disk manager of choice."
 			echo
 			exit
 			;;
@@ -197,6 +257,12 @@ done
 if [ -z "$_rootDir" ]
 then
 	echo "Error: please enter root directory or node using the '-d' arg."
+	exit 1
+fi
+
+if [ ! -z "$sendcommands" ] && [ ! -z "$reinstallgrub" ]
+then
+	echo "Error: please either use '-c' or '--reinstall-grub'"
 	exit 1
 fi
 
@@ -211,12 +277,7 @@ then
 	mount_bootDir
 fi
 setupChroot
-if [ ! -z "$reinstallgrub" ]
-then
-cat << EOF | chroot "$rootDir"
-bash -c "$args"
-exit
-EOF
-else
-	chroot "$rootDir" "$args"
-fi
+for i in "${args[@]}"
+do
+	chroot "$rootDir" ${i[@]}
+done
