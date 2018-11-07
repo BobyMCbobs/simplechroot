@@ -8,12 +8,15 @@ Chroot with ease
 ### Obtaining
 Just get the script:
 ```bash
-wget https://gitlab.com/BobyMCbobs/simplechroot/raw/master/simplechroot
+wget https://gitlab.com/BobyMCbobs/simplechroot/raw/1.0.0/simplechroot
 chmod +x simplechroot
 ```
 
 ### Usage
 ```bash
+# find partitions if you don't know them
+simplechroot -l
+
 # chroot into an already mounted root partition
 simplechroot -d /mnt/rootPartition
 

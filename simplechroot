@@ -123,16 +123,17 @@ then
 fi
 }
 
-function validate_rootDir() {
+function validate_fsDir() {
 # check if $_rootDir contains a standard Linux filesystem
+fsUse="$1"
 for i in bin/bash boot dev etc home lib mnt proc root run sbin sys tmp usr var
 do
-	if [ -e "$rootDir/$i" ]
+	if [ -e "$fsUse/$i" ]
 	then
 		continue
 	else
-		echo "Cannot find standard Linux filesystem folders or programs."
-		exit 1
+		[[ ! "$NOECHO" = true ]] && echo "Cannot find standard Linux filesystem folders or programs."
+		return 1
 	fi
 done
 
@@ -148,6 +149,7 @@ then
 fi
 
 unset i
+return
 }
 
 function parse_bootDir() {
@@ -179,6 +181,47 @@ then
 	echo "Error: failed to mount '$bootDir' to '$rootDir/boot'."
 	exit
 fi
+}
+
+function listPartitions() {
+# list partitions that are mountable
+while read o
+do
+	o_cut=$(echo $o | cut -d ' ' -f1 )
+	o_basename=$(basename $o_cut)
+	if echo "sr0" | grep -q "$o_basename" || ! lsblk | grep -q "$o_basename" || [[ "$o_basename" = "loop"* ]] || ( [[ ! "${o_basename#${o_basename%?}}" = [[:digit:]] ]] && [[ ! $(dirname $o_cut) = "/dev/mapper" ]]  && [[ ! $(dirname $o_cut) = "/dev/dm"* ]] ) || [[ $(echo $o | cut -d ' ' -f2) = "swap" ]] || [[ $(echo $o | cut -d ' ' -f2) = "LVM"* ]] || [[ $(echo $o | cut -d ' ' -f2) = "ntfs" ]] || [[ $(echo $o | cut -d ' ' -f2) = "hfs"* ]] || [[ $(echo $o | cut -d ' ' -f2) = "apfs" ]]  || [[ $(echo $o | cut -d ' ' -f2) = "fat"* ]]
+	then
+		continue
+	fi
+	if grep -q "$o_cut" /etc/mtab
+	then
+		echo "$o_cut    (already mounted)"
+		continue
+	fi
+	if ! mount "$o_cut" /mnt
+	then
+		echo "$o_cut    (was unable to mount)"
+		continue
+	fi
+	if NOECHO=true validate_fsDir "/mnt"
+	then
+		echo "$o_cut    (probably an installed Linux system)"
+		umount -f /mnt
+		continue
+	fi
+	if ls /mnt | grep -q "grub"
+	then
+		echo "$o_cut    (probably a Linux boot partition)"
+		umount -f /mnt
+		continue
+	fi
+	echo "$o_cut       (neither an installed Linux system or boot partition)"
+	if ! umount -f /mnt
+	then
+		echo "$o_cut    (was unable to unmount)"
+		exit 1
+	fi
+done < <(lsblk -rpf | sed -n '1!p' && realpath /dev/mapper/*)
 }
 
 # parse args
@@ -225,6 +268,11 @@ do
 			_verbose=true
 			;;
 
+		-l)
+			listPartitions
+			exit
+			;;
+
 		*)
 			# help menu
 			echo "simplechroot ($version)"
@@ -238,6 +286,7 @@ do
 			echo "	simplechroot -d /mnt/rootMount -b /dev/sda1 -c 'ls /bin/.'"
 			echo
 			echo "==========================================================="
+			echo "| -l               | list partitions                      |"
 			echo "| -d               | mounted root partition or devfs node |"
 			echo "| -b               | boot partition devfs node            |"
 			echo "| -v               | make output verbose                  |"
@@ -246,7 +295,7 @@ do
 			echo "|                  | pass 2, for use in grub2-install     |"
 			echo "==========================================================="
 			echo
-			echo "To find your disks, use 'fdisk -l' or your disk manager of choice."
+			echo "To find your disks, use 'simplechroot -l' or your disk manager of choice."
 			echo
 			exit
 			;;
@@ -270,7 +319,7 @@ trap unmountChroot EXIT
 
 # main process
 parse_rootDir
-validate_rootDir
+validate_fsDir "$rootDir" || exit 1
 if [ ! -z "$bootDir" ]
 then
 	parse_bootDir
