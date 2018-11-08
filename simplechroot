@@ -186,62 +186,73 @@ then
 	echo "Error: failed to mount '$bootDir' to '$rootDir/boot'."
 	exit
 fi
+msg "Status: mounted '$bootDir' to '$rootDir/boot'."
 }
 
 function listPartitions() {
 # list partitions that are mountable
 partitionList=""
+partitionUUIDs=""
 partCount=0
 echo "Listing partitions which should be usable"
 echo "-----------------------------------------"
+if grep -q "/mnt" /etc/mtab
+then
+	mountPoint="/tmp/simplechroot-mount-test"
+	mkdir -p "$mountPoint"
+else
+	mountPoint="/mnt"
+fi
 while read o
 do
-	o_cut=$(echo $o | cut -d ' ' -f1 )
+	o_cut=$(echo $o | cut -d ' ' -f1)
 	o_basename=$(basename $o_cut)
-	if echo "sr0" | grep -q "$o_basename" || ! lsblk | grep -q "$o_basename" || [[ "$o_basename" = "loop"* ]] || ( [[ ! "${o_basename#${o_basename%?}}" = [[:digit:]] ]] && [[ ! $(dirname $o_cut) = "/dev/mapper" ]] && [[ ! $(dirname $o_cut) = "/dev/dm"* ]] ) || echo "swap LVM2_member ntfs hfs hfs+ apfs" | grep -q "$(echo $o | cut -d ' ' -f2)" || echo "$partitionList" | grep -q "$o_cut"
+	o_blkuuid=$(lsblk -no UUID $o_cut)
+	if echo "sr0" | grep -q "$o_basename" || ! lsblk | grep -q "$o_basename" || [[ "$o_basename" = "loop"* ]] || ( [[ ! "${o_basename#${o_basename%?}}" = [[:digit:]] ]] && [[ ! $(dirname $o_cut) = "/dev/mapper" ]] && [[ ! $(dirname $o_cut) = "/dev/dm"* ]] ) || echo "swap LVM2_member ntfs hfs hfs+ apfs" | grep -q "$(echo $o | cut -d ' ' -f2)" || echo "$partitionList" | grep -q "$o_cut" || echo "$partitionUUIDs" | grep -q "$o_blkuuid"
 	then
 		continue
 	fi
 	partitionList="${partitionList} $o_cut"
+	partitionUUIDs="${partitionUUIDs} ${o_blkuuid}"
 	if grep -q "$o_cut" /etc/mtab
 	then
 		echo "[${partCount}-m.] $o_cut    (already mounted)"
 		partCount=$((partCount += 1))
 		continue
 	fi
-	if ! mount "$o_cut" /mnt > /dev/null 2>&1
+	if ! mount "$o_cut" "$mountPoint" > /dev/null 2>&1
 	then
 		echo "[${partCount}-!!] $o_cut    (was unable to mount)"
 		partCount=$((partCount += 1))
 		continue
 	fi
-	if NOECHO=true validate_fsDir "/mnt"
+	if NOECHO=true validate_fsDir "$mountPoint"
 	then
-		if [ -e '/mnt/boot/grub'*'/grub.cfg' ]
+		if [ -e '$mountPoint/boot/grub'*'/grub.cfg' ]
 		then
 			echo "[${partCount}-rb] $o_cut    (probably an installed Linux system with grub)"
 		else
 			echo "[${partCount}-r.] $o_cut    (probably an installed Linux system)"
 		fi
 		partCount=$((partCount += 1))
-		umount -f /mnt
+		umount -f "$mountPoint"
 		continue
 	fi
-	if [ -e '/mnt/grub'*'/grub.cfg' ]
+	if [ -e '$mountPoint/grub'*'/grub.cfg' ]
 	then
 		echo "[${partCount}-b.] $o_cut    (probably a Linux boot partition)"
-		umount -f /mnt
+		umount -f "$mountPoint"
 		partCount=$((partCount += 1))
 		continue
 	fi
 	echo "[${partCount}-??] $o_cut       (neither an installed Linux system or boot partition, could be a data partition such as a home partition)"
-	if ! umount -f /mnt
+	if ! umount -f "$mountPoint"
 	then
 		echo "[${partCount}-!!] $o_cut    (was unable to unmount)"
 		partCount=$((partCount += 1))
 		exit 1
 	fi
-done < <(lsblk -rpf | sed -n '1!p' && realpath /dev/mapper/*)
+done < <(lsblk -rpf | sed -n '1!p' && realpath /dev/mapper/* | sed '/control/d')
 echo "-----------------------------------------"
 }
 
