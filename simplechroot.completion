@@ -1,5 +1,5 @@
 #!/bin/bash
 
-complete -W "-r -b -h --reinstall-grub -c -l" simplechroot
+complete -W "-r -b -h --reinstall-grub -c -l --root --boot --help -rg --command --list-partitions" simplechroot
 
 # ex: filetype=sh

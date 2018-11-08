@@ -8,7 +8,7 @@ Chroot with ease
 ### Obtaining
 Just get the script:
 ```bash
-wget https://gitlab.com/BobyMCbobs/simplechroot/raw/1.0.0/simplechroot
+wget https://gitlab.com/BobyMCbobs/simplechroot/raw/1.1.0/simplechroot
 chmod +x simplechroot
 ```
 
@@ -27,7 +27,7 @@ simplechroot -r /dev/sda2
 simplechroot -r /dev/sda2 -b /dev/sda1  
 
 # mount the boot node, chroot, and reinstall grub
-simplechroot -r /dev/sda2 -b /dev/sda1 --reinstall-grub 2
+simplechroot -r /dev/sda2 -b /dev/sda1 --reinstall-grub
 
 # mount the boot node, chroot, and run a single command
 simplechroot -r /dev/sda2 -b /dev/sda1 -c "ls -alh /bin/."
@@ -35,11 +35,11 @@ simplechroot -r /dev/sda2 -b /dev/sda1 -c "ls -alh /bin/."
 
 | Arg | Description |
 | - | - |
-| `-l` | List partitions and LVM partition |
-| `-r` | Mounted root partition path or devfs node (i.e: /mnt/p, /dev/sda2, /dev/nvme0n1p2) |
-| `-b` | Boot partition devfs node (i.e: /dev/sda1, /dev/nvme0n1p1) |
-| `--reinstall-grub` | Reinstall grub on the given drive (requires -r and -b). For use in grub2-install use `--reinstall-grub 2` |
-| `-c` | Pass a command inside the chroot environment |
+| `-l` or `--list-partitions` | List partitions and LVM partition |
+| `-r` or `--root` | Mounted root partition path or devfs node (i.e: /mnt/p, /dev/sda2, /dev/nvme0n1p2) |
+| `-b` or `--boot` | Boot partition devfs node (i.e: /dev/sda1, /dev/nvme0n1p1) |
+| `-rg` or `--reinstall-grub` | Reinstall grub on the given drive (requires -r and -b) |
+| `-c` or `--command` | Pass a command inside the chroot environment |
 
 ### Packaging
 AppImage: `make prep-appimage && make build-appimage`  

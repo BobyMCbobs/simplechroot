@@ -21,7 +21,7 @@
 
 mountNode=false
 _verbose=false
-version=1.0.0
+version=1.1.0
 
 if [ ! "$(id -u)" = 0 ]
 then
@@ -44,7 +44,7 @@ function msg() {
 # print if _verbose is true
 if [ "$_verbose" = true ]
 then
-	echo $@
+	echo "::> $@"
 fi
 }
 
@@ -139,11 +139,16 @@ done
 
 if [ "$reinstallgrub" = true ]
 then
-	if [[ ! -e "$rootDir/usr/sbin/grub${grubver}-install" ]] || [[ ! -e "$rootDir/usr/sbin/grub${grubver}-mkconfig" ]]
+	if [[ -e "$rootDir/usr/sbin/grub-install" ]] || [[ -e "$rootDir/usr/sbin/grub-mkconfig" ]]
 	then
-		echo "Cannot find standard Linux filesystem folders or programs."
-		echo "The system which you are trying to repair most likely uses grub2."
-		echo "Try 'simplechroot -r $_rootDir -b $bootDir --reinstall-grub 2'"
+		grubver=""
+
+	elif [[ -e "$rootDir/usr/sbin/grub2-install" ]] || [[ -e "$rootDir/usr/sbin/grub2-mkconfig" ]]
+	then
+		grubver="2"
+
+	else
+		echo "Cannot find grub install programs on destination root."
 		exit 1
 	fi
 fi
@@ -244,23 +249,20 @@ echo "-----------------------------------------"
 while [ $# -gt 0 ]
 do
 	case "$1" in
-		-r)
+		-r|--root)
 			# root directory or node
 			shift
 			_rootDir="$1"
 			;;
 
-		-b)
+		-b|--boot)
 			# boot directory or node
 			shift
 			bootDir="$1"
 			;;
 
-		--reinstall-grub)
+		-rg|--reinstall-grub)
 			# grub reinstallation
-			shift
-			_grubver="$1"
-			[ "$_grubver" = 2 ] && grubver="2" || grubver=""
 			reinstallgrub=true
 			if [ -z "$bootDir" ] || [ -z "$_rootDir" ]
 			then
@@ -268,23 +270,21 @@ do
 				exit 1
 			fi
 			bootDir_base=$(lsblk -no pkname --path $bootDir)
-			msg "Reinstalling grub${grubver} on '$bootDir_base'."
-			args=("grub${grubver}-install $bootDir_base --recheck" "grub${grubver}-mkconfig -o /boot/grub${grubver}/grub.cfg")
 			;;
 
-		-c)
+		-c|--comand)
 			# commands to run in chroot
 			shift
 			sendcommands=true
-			args="$@"
+			args=$@
 			;;
 
-		-v)
+		-v|--verbose)
 			# output progress
 			_verbose=true
 			;;
 
-		-l)
+		-l|--list-partitions)
 			listPartitions
 			exit
 			;;
@@ -307,8 +307,7 @@ do
 			echo "| -b               | boot partition devfs node            |"
 			echo "| -v               | make output verbose                  |"
 			echo "| -c               | send a command to the chroot         |"
-			echo "| --reinstall-grub | reinstall grub (requires -b)         |"
-			echo "|                  | use '--reinstall-grub 2', for grub2  |"
+			echo "| --reinstall-grub | reinstall grub (requires -b and -r)  |"
 			echo "==========================================================="
 			echo
 			echo "To find your disks, use 'simplechroot -l' or your disk manager of choice."
@@ -342,7 +341,14 @@ then
 	mount_bootDir
 fi
 setupChroot
+if [ "$reinstallgrub" = true ]
+then
+	msg "Reinstalling grub${grubver} on '$bootDir_base'."
+	args=("grub${grubver}-install $bootDir_base --recheck" "grub${grubver}-mkconfig -o /boot/grub${grubver}/grub.cfg")
+fi
+msg "=======CHROOT START======="
 for i in "${args[@]}"
 do
 	chroot "$rootDir" ${i[@]}
 done
+msg "========CHROOT END========"

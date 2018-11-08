@@ -1,5 +1,5 @@
 Name:           simplechroot
-Version:        1.0.0
+Version:        1.1.0
 Release:        0
 Summary:        Chroot with ease
 BuildArch:	noarch
@@ -28,5 +28,8 @@ Setup a chroot with ease.
 
 
 %changelog
+* Thu Nov 8 2018 caleb
+- Update to version 1.1.0
+
 * Sat Oct 27 2018 caleb
 - Initial rpm spec
