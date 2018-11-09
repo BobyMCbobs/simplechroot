@@ -216,7 +216,18 @@ do
 	partitionUUIDs="${partitionUUIDs} ${o_blkuuid}"
 	if grep -q "$o_cut" /etc/mtab
 	then
-		echo "[${partCount}-m.] $o_cut    (already mounted)"
+		o_cut_mountpoint=$(findmnt -nr -o target -S $o_cut)
+		if NOECHO=true validate_fsDir "$o_cut_mountpoint"
+		then
+			if [ -e "$o_cut_mountpoint/boot/grub/grub.cfg" ] || [ -e "$o_cut_mountpoint/boot/grub2/grub.cfg" ]
+			then
+				echo "[${partCount}-mr] $o_cut    (probably an installed Linux system with grub, already mounted)"
+			else
+				echo "[${partCount}-mr] $o_cut    (probably an installed Linux system, already mounted)"
+			fi
+		else
+			echo "[${partCount}-m.] $o_cut    (already mounted)"
+		fi
 		partCount=$((partCount += 1))
 		continue
 	fi
@@ -228,7 +239,7 @@ do
 	fi
 	if NOECHO=true validate_fsDir "$mountPoint"
 	then
-		if [ -e '$mountPoint/boot/grub'*'/grub.cfg' ]
+		if [ -e "$mountPoint/boot/grub/grub.cfg" ] || [ -e "$mountPoint/boot/grub2/grub.cfg" ]
 		then
 			echo "[${partCount}-rb] $o_cut    (probably an installed Linux system with grub)"
 		else
@@ -238,14 +249,14 @@ do
 		umount -f "$mountPoint"
 		continue
 	fi
-	if [ -e '$mountPoint/grub'*'/grub.cfg' ]
+	if [ -e "$mountPoint/grub/grub.cfg" ] || [ -e "$mountPoint/grub2/grub.cfg" ]
 	then
 		echo "[${partCount}-b.] $o_cut    (probably a Linux boot partition)"
-		umount -f "$mountPoint"
 		partCount=$((partCount += 1))
+		umount -f "$mountPoint"
 		continue
 	fi
-	echo "[${partCount}-??] $o_cut       (neither an installed Linux system or boot partition, could be a data partition such as a home partition)"
+	echo "[${partCount}-??] $o_cut    (neither an installed Linux system or boot partition, could be a data partition such as a home partition)"
 	if ! umount -f "$mountPoint"
 	then
 		echo "[${partCount}-!!] $o_cut    (was unable to unmount)"
