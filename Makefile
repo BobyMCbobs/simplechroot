@@ -42,13 +42,27 @@ build-appimage:
 	@chmod +x simplechroot.AppDir/AppRun
 	ARCH=x86_64 ./tools/appimagetool-x86_64.AppImage -n simplechroot.AppDir
 
+prep-snap: build-zip
+	mkdir -p snap-build
+	mv zip-build/simplechroot.zip snap-build/.
+	rm -rf zip-build
+	cp support/snap/snapcraft.yaml snap-build
+
+
+build-snap:
+	cd snap-build && snapcraft cleanbuild
+
+build-snap-docker:
+	docker run -it --rm -v "$(shell pwd)/snap-build":/build -w /build snapcore/snapcraft bash -c "(apt update && snapcraft) || bash"
+
+
 build-zip:
 	@mkdir -p zip-build/simplechroot
 	@make DESTDIR=zip-build/simplechroot install
 	@cd zip-build/simplechroot && zip -r ../simplechroot.zip .
 
 clean:
-	@rm -rf deb-build simplechroot.AppDir simplechroot-x86_64.AppImage zip-build
+	@rm -rf deb-build simplechroot.AppDir simplechroot-x86_64.AppImage zip-build snap-build
 
 help:
 	@echo "Read 'README.md' for info on building."
