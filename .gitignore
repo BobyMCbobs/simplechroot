@@ -4,3 +4,8 @@ zip-build
 simplechroot.AppDir
 simplechroot-x86_64.AppImage
 snap-build
+snap/.snapcraft
+parts
+prime
+stage
+simplechroot_*_*.snap

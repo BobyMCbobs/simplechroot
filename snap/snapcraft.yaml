@@ -12,8 +12,10 @@ architectures:
 
 parts:
   simplechroot:
-    plugin: dump
-    source: simplechroot.zip
+    plugin: nil
+    override-build: |
+      make DESTDIR=$SNAPCRAFT_PART_INSTALL install
+    build-packages: [build-essential]
 
 apps:
   simplechroot:

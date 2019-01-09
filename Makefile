@@ -48,13 +48,11 @@ prep-snap: build-zip
 	rm -rf zip-build
 	cp support/snap/snapcraft.yaml snap-build
 
-
 build-snap:
 	cd snap-build && snapcraft cleanbuild
 
 build-snap-docker:
-	docker run -it --rm -v "$(shell pwd)/snap-build":/build -w /build snapcore/snapcraft bash -c "(apt update && snapcraft) || bash"
-
+	docker run -it --rm -v "$(shell pwd)":/build -w /build snapcore/snapcraft bash -c "(apt update && snapcraft) || bash"
 
 build-zip:
 	@mkdir -p zip-build/simplechroot
@@ -62,7 +60,7 @@ build-zip:
 	@cd zip-build/simplechroot && zip -r ../simplechroot.zip .
 
 clean:
-	@rm -rf deb-build simplechroot.AppDir simplechroot-x86_64.AppImage zip-build snap-build
+	@rm -rf deb-build simplechroot.AppDir simplechroot-x86_64.AppImage zip-build snap-build parts prime stage simplechroot_*_*.snap
 
 help:
 	@echo "Read 'README.md' for info on building."
