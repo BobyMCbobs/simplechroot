@@ -1,0 +1,46 @@
+image: opensuse/leap
+
+stages:
+  - build
+  - deploy
+
+pages:
+  stage: deploy
+  script:
+    - mkdir .public
+    - cp -r builtBinaries/* .public
+    - mv .public public
+  dependencies:
+    - build
+  artifacts:
+    paths:
+      - public/*
+  only:
+    - tags
+    - master
+
+build:
+  stage: build
+  before_script:
+    # install deps for build enviroment
+    - zypper in -y git wget fuse AppStream appstream-glib unzip zip libfuse2-32bit binutils
+    - zypper in -y -t pattern devel_basis
+  script:
+    # make built directory
+    - mkdir builtBinaries
+    # build AppImage
+    - make prep-appimage build-appimage || true
+    - cd tools
+    - ./appimagetool-x86_64.AppImage --appimage-extract || true
+    - ./squashfs-root/AppRun -n -s ../com.bobymcbobs.simplechroot.AppDir
+    - mv simplechroot-x86_64.AppImage ../builtBinaries/.
+    - cd ..
+    # clean build
+    - make clean
+  artifacts:
+    expire_in: 5 days
+    paths:
+      - builtBinaries/*
+  only:
+    - tags
+    - master
