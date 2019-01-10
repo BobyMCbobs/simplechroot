@@ -2,10 +2,12 @@ Name:           simplechroot
 Version:        1.1.1
 Release:        0
 Summary:        Chroot with ease
-BuildArch:	noarch
-License:        GPLv3
+Group:          System/Management
+BuildArch:      noarch
+License:        GPL-3.0
 URL:            https://gitlab.com/BobyMCbobs/%{name}
 Source0:        https://gitlab.com/BobyMCbobs/%{name}/-/archive/%{version}/%{name}-%{version}.zip
+BuildRequires:	unzip
 
 
 %description
@@ -15,6 +17,7 @@ Setup a chroot with ease.
 %prep
 %autosetup
 
+%build
 
 %install
 %{__make} DESTDIR=$RPM_BUILD_ROOT install
