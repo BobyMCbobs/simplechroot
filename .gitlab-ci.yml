@@ -32,7 +32,7 @@ build:
     - make prep-appimage build-appimage || true
     - cd tools
     - ./appimagetool-x86_64.AppImage --appimage-extract || true
-    - ./squashfs-root/AppRun -n -s ../com.bobymcbobs.simplechroot.AppDir
+    - ./squashfs-root/AppRun -n -s ../simplechroot.AppDir
     - mv simplechroot-x86_64.AppImage ../builtBinaries/.
     - cd ..
     # clean build
