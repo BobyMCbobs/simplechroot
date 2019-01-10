@@ -1,3 +1,9 @@
+simplechroot (1.1.1) bionic; urgency=medium
+
+  * Update to version 1.1.1
+
+ -- Caleb Woodbine <calebwoodbine.public@gmail.com>  Thu, 10 Jan 2019 21:27:42 +1300
+
 simplechroot (1.1.0) bionic; urgency=medium
 
   * Update to version 1.1.0

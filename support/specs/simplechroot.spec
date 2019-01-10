@@ -1,5 +1,5 @@
 Name:           simplechroot
-Version:        1.1.0
+Version:        1.1.1
 Release:        0
 Summary:        Chroot with ease
 BuildArch:	noarch
@@ -25,6 +25,7 @@ Setup a chroot with ease.
 %doc README.md
 /usr/bin/%{name}
 /usr/share/bash-completion/completions/%{name}
+/usr/share/metainfo/simplechroot.appdata.xml
 
 
 %changelog
