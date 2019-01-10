@@ -40,7 +40,7 @@ build-appimage:
 	@cp ./support/AppImage/simplechroot.png ./simplechroot.AppDir
 	@cp ./support/AppImage/simplechroot.png simplechroot.AppDir/usr/share/icons/hicolor/256x256/apps
 	@chmod +x simplechroot.AppDir/AppRun
-	ARCH=x86_64 ./tools/appimagetool-x86_64.AppImage -n simplechroot.AppDir
+	ARCH=x86_64 ./tools/appimagetool-x86_64.AppImage simplechroot.AppDir
 
 prep-snap: build-zip
 	mkdir -p snap-build

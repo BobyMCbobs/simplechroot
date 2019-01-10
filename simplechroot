@@ -23,12 +23,6 @@ mountNode=false
 _verbose=false
 version=1.1.0
 
-if [ ! "$(id -u)" = 0 ]
-then
-	echo "Error: you must be root to use this script."
-	exit 1
-fi
-
 if [ -z "$args" ]
 then
 	args="/bin/bash"
@@ -339,6 +333,12 @@ do
 	esac
 	shift
 done
+
+if [ ! "$(id -u)" = 0 ]
+then
+	echo "Error: you must be root to use this script."
+	exit 1
+fi
 
 if [ -z "$_rootDir" ]
 then
