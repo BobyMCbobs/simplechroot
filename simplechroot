@@ -21,7 +21,7 @@
 
 mountNode=false
 _verbose=false
-version=1.1.0
+version=1.1.1
 
 if [ -z "$args" ]
 then

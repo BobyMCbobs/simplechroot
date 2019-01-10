@@ -1,18 +1,18 @@
-PREFIX ?= /usr
-COMPLETIONDIR ?= $(PREFIX)/share/bash-completion/completions
+PREFIX = /usr
+COMPLETIONDIR = $(PREFIX)/share/bash-completion/completions
 
 all: help
 
 install:
-	@mkdir -p $(DESTDIR)$(PREFIX)/bin
-	@mkdir -p $(DESTDIR)$(COMPLETIONDIR)
+	@mkdir -p $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(COMPLETIONDIR) $(DESTDIR)/usr/share/metainfo/
 	@cp -p simplechroot $(DESTDIR)$(PREFIX)/bin
 	@cp -p simplechroot.completion $(DESTDIR)$(COMPLETIONDIR)/simplechroot
+	@cp -p support/shared-resources/simplechroot.appdata.xml $(DESTDIR)/usr/share/metainfo/
 	@chmod 755 $(DESTDIR)$(PREFIX)/bin/simplechroot
 	@chmod 755 $(DESTDIR)$(COMPLETIONDIR)/simplechroot
 
 uninstall:
-	@rm -rf $(DESTDIR)$(PREFIX)/bin/simplechroot $(DESTDIR)$(COMPLETIONDIR)/simplechroot
+	@rm -rf $(DESTDIR)$(PREFIX)/bin/simplechroot $(DESTDIR)$(PREFIX)/share/bash-completion/completions/simplechroot
 
 prep-deb:
 	@mkdir -p deb-build/simplechroot
@@ -39,7 +39,10 @@ build-appimage:
 	@cp ./support/shared-resources/simplechroot.desktop ./simplechroot.AppDir
 	@cp ./support/AppImage/simplechroot.png ./simplechroot.AppDir
 	@cp ./support/AppImage/simplechroot.png simplechroot.AppDir/usr/share/icons/hicolor/256x256/apps
+	@mv ./simplechroot.AppDir/usr/share/metainfo/simplechroot.appdata.xml ./simplechroot.AppDir/usr/share/metainfo/com.bobymcbobs.simplechroot.appdata.xml
+	@mv ./simplechroot.AppDir/simplechroot.desktop ./simplechroot.AppDir/com.bobymcbobs.simplechroot.desktop
 	@chmod +x simplechroot.AppDir/AppRun
+	@sed -i -e "s#<id>simplechroot.desktop</id>#<id>com.bobymcbobs.simplechroot.desktop</id>#g" ./simplechroot.AppDir/usr/share/metainfo/com.bobymcbobs.simplechroot.appdata.xml
 	ARCH=x86_64 ./tools/appimagetool-x86_64.AppImage simplechroot.AppDir
 
 prep-snap: build-zip
