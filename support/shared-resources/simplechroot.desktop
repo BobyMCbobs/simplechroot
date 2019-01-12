@@ -7,6 +7,6 @@ Exec=AppRun
 Icon=simplechroot
 StartupNotify=true
 Terminal=true
-Categories=Network;Monitor;
+Categories=Utility;
 Name[en_US]=simplechroot
 StartupWMClass=simplechroot
